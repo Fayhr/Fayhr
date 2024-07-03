@@ -8,12 +8,10 @@ import {Fayhr} from "../src/crowdfund.sol";
 
 contract DeployFayhr is Script {
     function run() external {
-    
         address admin = vm.addr(0x1);
         address tokenDeployer = vm.addr(0x2);
         address user1 = vm.addr(0x3);
         address user2 = vm.addr(0x4);
-
 
         vm.startBroadcast(tokenDeployer);
 

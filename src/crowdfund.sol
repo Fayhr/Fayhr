@@ -31,6 +31,7 @@ contract Fayhr {
         uint256 totalContributed;
         Authorization authorization;
         bool closed;
+        bool pollClosed;
         mapping(address => uint256) contributions;
     }
 
@@ -92,11 +93,13 @@ contract Fayhr {
         newCrowdfundType.totalContributed = 0;
         newCrowdfundType.authorization = Authorization.inactive;
         newCrowdfundType.closed = false;
+        newCrowdfundType.pollClosed = false;
 
         emit PollCreated(newCrowdfundId, _name);
     }
 
     function vote(uint256 crowdfundId, bool choice) external onlyWhenActive {
+        require(crowdfundTypes[crowdfundId].pollClosed != true, "Poll Closed");
         require(crowdfundTypes[crowdfundId].id != 0, "Crowdfund Doesn't Exist!");
         require(!hasVoted[crowdfundId][msg.sender], "Already Voted");
         hasVoted[crowdfundId][msg.sender] = true;
@@ -110,6 +113,7 @@ contract Fayhr {
         if (crowdfundTypes[crowdfundId].availableYesVotes >= crowdfundTypes[crowdfundId].requiredYesVotes) {
             crowdfundTypes[crowdfundId].authorization = Authorization.active;
             crowdfundTypes[crowdfundId].closed = true;
+            crowdfundTypes[crowdfundId].pollClosed = true;
             emit CrowdfundCreated(
                 crowdfundId,
                 crowdfundTypes[crowdfundId].slot,
