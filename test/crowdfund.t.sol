@@ -6,7 +6,7 @@ import "../src/crowdfund.sol";
 import "../src/TestToken.sol";
 
 contract FahyrTest is Test {
-    Fahyr fahyr;  // Corrected variable name
+    Fahyr fahyr; // Corrected variable name
     TestToken token;
     address public admin;
     address public user1;
@@ -20,7 +20,7 @@ contract FahyrTest is Test {
         seperateAdmin = address(0x3);
 
         token = new TestToken();
-        fahyr = new Fahyr(seperateAdmin, address(token));  // Corrected variable name
+        fahyr = new Fahyr(seperateAdmin, address(token)); // Corrected variable name
 
         // Distribute tokens to users
         token.transfer(user1, 100000);
@@ -64,7 +64,8 @@ contract FahyrTest is Test {
 
         vm.prank(seperateAdmin);
         fahyr.startCrowdfund(1, 1, 0, 10, 100, 1000);
-        (,,,, uint256 slot, uint256 startTime, uint256 endTime, uint256 softCap, uint256 hardCap,,, bool closed) = fahyr.crowdfundTypes(1);
+        (,,,, uint256 slot, uint256 startTime, uint256 endTime, uint256 softCap, uint256 hardCap,,, bool closed) =
+            fahyr.crowdfundTypes(1);
         assertEq(slot, 1);
         assertTrue(startTime <= block.timestamp);
         assertTrue(endTime > block.timestamp);
@@ -100,17 +101,17 @@ contract FahyrTest is Test {
         vm.prank(user1);
         token.approve(address(fahyr), 100);
         // Logging the initial state of totalContributed before delegation
-    (, , , , , , , , , uint256 initialTotalContributed, ,) = fahyr.crowdfundTypes(1);
-    console.log("Initial Total Contributed: ", initialTotalContributed);
+        (,,,,,,,,, uint256 initialTotalContributed,,) = fahyr.crowdfundTypes(1);
+        console.log("Initial Total Contributed: ", initialTotalContributed);
 
-    vm.prank(user1);
-    fahyr.delegateToken(1, 1);
+        vm.prank(user1);
+        fahyr.delegateToken(1, 1);
 
-    // Logging the final state of totalContributed after delegation
-    (, , , , , , , , , uint256 finalTotalContributed, ,) = fahyr.crowdfundTypes(1);
-    console.log("Final Total Contributed: ", finalTotalContributed);
+        // Logging the final state of totalContributed after delegation
+        (,,,,,,,,, uint256 finalTotalContributed,,) = fahyr.crowdfundTypes(1);
+        console.log("Final Total Contributed: ", finalTotalContributed);
 
-    assertEq(finalTotalContributed, 10);
+        assertEq(finalTotalContributed, 10);
     }
 
     function testClaimToken() public {
@@ -132,12 +133,12 @@ contract FahyrTest is Test {
 
         uint256 user1Balance = token.balanceOf(user1);
         assertEq(user1Balance, 100000);
-        (, , , , , , , , , uint256 totalContributed, ,) = fahyr.crowdfundTypes(1);
+        (,,,,,,,,, uint256 totalContributed,,) = fahyr.crowdfundTypes(1);
         assertEq(totalContributed, 10);
     }
-    
+
     function testClaimTokenWhenCancalCalled() public {
-     vm.prank(seperateAdmin);
+        vm.prank(seperateAdmin);
         fahyr.createPoll(1, "Poll1", 1);
         vm.prank(user1);
         fahyr.vote(1, true);
@@ -152,14 +153,14 @@ contract FahyrTest is Test {
 
         vm.prank(seperateAdmin);
         fahyr.cancelCrowdfund(1);
-        
+
         vm.prank(user1);
         fahyr.claimToken(1);
 
         uint256 user1Balance = token.balanceOf(user1);
         assertEq(user1Balance, 100000);
-        (, , , , , , , , , uint256 totalContributed, ,) = fahyr.crowdfundTypes(1);
-        assertEq(totalContributed, 10);   
+        (,,,,,,,,, uint256 totalContributed,,) = fahyr.crowdfundTypes(1);
+        assertEq(totalContributed, 10);
     }
 
     function testCancelCrowdfund() public {
@@ -173,7 +174,7 @@ contract FahyrTest is Test {
         vm.prank(seperateAdmin);
         fahyr.cancelCrowdfund(1);
 
-        (, , , , , , , , , , Fahyr.Authorization authorization, ) = fahyr.crowdfundTypes(1);
+        (,,,,,,,,,, Fahyr.Authorization authorization,) = fahyr.crowdfundTypes(1);
         assertEq(uint256(authorization), uint256(Fahyr.Authorization.cancel));
     }
 
@@ -191,7 +192,20 @@ contract FahyrTest is Test {
         vm.prank(seperateAdmin);
         fahyr.restartCanceledCrowdfund(1, 1, 0, 20, 200, 2000);
 
-        (, , , , uint256 slot, uint256 startTime, uint256 endTime, uint256 softCap, uint256 hardCap, , Fahyr.Authorization authorization, bool closed ) = fahyr.crowdfundTypes(1);
+        (
+            ,
+            ,
+            ,
+            ,
+            uint256 slot,
+            uint256 startTime,
+            uint256 endTime,
+            uint256 softCap,
+            uint256 hardCap,
+            ,
+            Fahyr.Authorization authorization,
+            bool closed
+        ) = fahyr.crowdfundTypes(1);
         assertEq(slot, 1);
         assertTrue(startTime <= block.timestamp);
         assertTrue(endTime > block.timestamp);
@@ -216,21 +230,20 @@ contract FahyrTest is Test {
 
         vm.warp(block.timestamp + 20);
 
-
         vm.prank(seperateAdmin);
         fahyr.withdrawCrowdfund(1);
 
         // Check balances after withdrawal
-       uint256 adminBalance = token.balanceOf(seperateAdmin);
-       uint256 user1Balance = token.balanceOf(user1);
-       uint256 testContractBalance = token.balanceOf(address(this));
+        uint256 adminBalance = token.balanceOf(seperateAdmin);
+        uint256 user1Balance = token.balanceOf(user1);
+        uint256 testContractBalance = token.balanceOf(address(this));
 
-       // Ensure the tokens have been withdrawn correctly
-       assertEq(adminBalance, 1000); // separateAdmin gets 1000 tokens
-       assertEq(user1Balance, 99000); // user1 balance after delegation
+        // Ensure the tokens have been withdrawn correctly
+        assertEq(adminBalance, 1000); // separateAdmin gets 1000 tokens
+        assertEq(user1Balance, 99000); // user1 balance after delegation
 
-       // Ensure the test contract balance is correctly updated
-       assertEq(testContractBalance, 999999999999999999800000); // initial 1 million minus tokens sent to user1 and user2
+        // Ensure the test contract balance is correctly updated
+        assertEq(testContractBalance, 999999999999999999800000); // initial 1 million minus tokens sent to user1 and user2
     }
 
     function testDeleteContract() public {
