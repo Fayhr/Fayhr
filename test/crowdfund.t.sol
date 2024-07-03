@@ -6,7 +6,7 @@ import "../src/crowdfund.sol";
 import "../src/TestToken.sol";
 
 contract FahyrTest is Test {
-    Fahyr fahyr; // Corrected variable name
+    Fayhr fayhr; // Corrected variable name
     TestToken token;
     address public admin;
     address public user1;
@@ -20,17 +20,18 @@ contract FahyrTest is Test {
         seperateAdmin = address(0x3);
 
         token = new TestToken();
-        fahyr = new Fahyr(seperateAdmin, address(token)); // Corrected variable name
+        fayhr = new Fayhr(seperateAdmin, address(token)); // Corrected variable name
 
         // Distribute tokens to users
-        token.transfer(user1, 100000);
-        token.transfer(user2, 100000);
+        token.transfer(user1, 100000e6);
+        token.transfer(user2, 100000e6);
+        vm.deal(user1, 100 ether);
     }
 
     function testCreatePoll() public {
         vm.prank(seperateAdmin);
-        fahyr.createPoll(1, "Poll1", 10);
-        (uint256 id, string memory name,, uint256 availableYesVotes,,,,,,,,) = fahyr.crowdfundTypes(1);
+        fayhr.createPoll(1, "Poll1", 10);
+        (uint256 id, string memory name,, uint256 availableYesVotes,,,,,,,,) = fayhr.crowdfundTypes(1);
         assertEq(id, 1);
         assertEq(name, "Poll1");
         assertEq(availableYesVotes, 0);
@@ -38,159 +39,159 @@ contract FahyrTest is Test {
 
     function testVote() public {
         vm.prank(seperateAdmin);
-        fahyr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1);
 
         vm.prank(user1);
-        fahyr.vote(1, true);
+        fayhr.vote(1, true);
 
-        (,,, uint256 availableYesVotes,,,,,,,,) = fahyr.crowdfundTypes(1);
+        (,,, uint256 availableYesVotes,,,,,,,,) = fayhr.crowdfundTypes(1);
         assertEq(availableYesVotes, 1);
     }
 
     function testDeleteCrowdfundAndPoll() public {
         vm.prank(seperateAdmin);
-        fahyr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1);
         vm.prank(seperateAdmin);
-        fahyr.deleteCrowdfundAndPoll(1);
-        (uint256 id,,,,,,,,,,,) = fahyr.crowdfundTypes(1);
+        fayhr.deleteCrowdfundAndPoll(1);
+        (uint256 id,,,,,,,,,,,) = fayhr.crowdfundTypes(1);
         assertEq(id, 0);
     }
 
     function testStartCrowdfund() public {
         vm.prank(seperateAdmin);
-        fahyr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1);
         vm.prank(user1);
-        fahyr.vote(1, true);
+        fayhr.vote(1, true);
 
         vm.prank(seperateAdmin);
-        fahyr.startCrowdfund(1, 1, 0, 10, 100, 1000);
+        fayhr.startCrowdfund(1, 1e6, 0, 10, 100e6, 1000e6);
         (,,,, uint256 slot, uint256 startTime, uint256 endTime, uint256 softCap, uint256 hardCap,,, bool closed) =
-            fahyr.crowdfundTypes(1);
-        assertEq(slot, 1);
+            fayhr.crowdfundTypes(1);
+        assertEq(slot, 1e6);
         assertTrue(startTime <= block.timestamp);
         assertTrue(endTime > block.timestamp);
-        assertEq(softCap, 100);
-        assertEq(hardCap, 1000);
+        assertEq(softCap, 100e6);
+        assertEq(hardCap, 1000e6);
         assertFalse(closed);
     }
 
     function testApproveToken() public {
         vm.prank(user1);
-        token.approve(address(fahyr), 100);
-        uint256 allowance = token.allowance(user1, address(fahyr));
-        assertEq(allowance, 100);
+        token.approve(address(fayhr), 100e6);
+        uint256 allowance = token.allowance(user1, address(fayhr));
+        assertEq(allowance, 100e6);
     }
 
     function testDeapproveToken() public {
         vm.prank(user1);
-        token.approve(address(fahyr), 100);
+        token.approve(address(fayhr), 100e6);
         vm.prank(user1);
-        token.approve(address(fahyr), 0);
-        uint256 allowance = token.allowance(user1, address(fahyr));
+        token.approve(address(fayhr), 0);
+        uint256 allowance = token.allowance(user1, address(fayhr));
         assertEq(allowance, 0, "allowance should be zero");
     }
 
     function testDelegateToken() public {
         vm.prank(seperateAdmin);
-        fahyr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1);
         vm.prank(user1);
-        fahyr.vote(1, true);
+        fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fahyr.startCrowdfund(1, 10, 0, 10, 100, 1000);
+        fayhr.startCrowdfund(1, 10e6, 0, 10, 100e6, 1000e6);
 
         vm.prank(user1);
-        token.approve(address(fahyr), 100);
+        token.approve(address(fayhr), 100e6);
         // Logging the initial state of totalContributed before delegation
-        (,,,,,,,,, uint256 initialTotalContributed,,) = fahyr.crowdfundTypes(1);
+        (,,,,,,,,, uint256 initialTotalContributed,,) = fayhr.crowdfundTypes(1);
         console.log("Initial Total Contributed: ", initialTotalContributed);
 
         vm.prank(user1);
-        fahyr.delegateToken(1, 1);
+        fayhr.delegateToken(1, 1);
 
         // Logging the final state of totalContributed after delegation
-        (,,,,,,,,, uint256 finalTotalContributed,,) = fahyr.crowdfundTypes(1);
+        (,,,,,,,,, uint256 finalTotalContributed,,) = fayhr.crowdfundTypes(1);
         console.log("Final Total Contributed: ", finalTotalContributed);
 
-        assertEq(finalTotalContributed, 10);
+        assertEq(finalTotalContributed, 10e6);
     }
 
     function testClaimToken() public {
         vm.prank(seperateAdmin);
-        fahyr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1);
         vm.prank(user1);
-        fahyr.vote(1, true);
+        fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fahyr.startCrowdfund(1, 10, 0, 10, 100, 1000);
+        fayhr.startCrowdfund(1, 10e6, 0, 10, 100e6, 1000e6);
 
         vm.prank(user1);
-        token.approve(address(fahyr), 100);
+        token.approve(address(fayhr), 100e6);
         vm.prank(user1);
-        fahyr.delegateToken(1, 1);
+        fayhr.delegateToken(1, 1);
         vm.warp(block.timestamp + 20);
 
         vm.prank(user1);
-        fahyr.claimToken(1);
+        fayhr.claimToken(1);
 
         uint256 user1Balance = token.balanceOf(user1);
-        assertEq(user1Balance, 100000);
-        (,,,,,,,,, uint256 totalContributed,,) = fahyr.crowdfundTypes(1);
-        assertEq(totalContributed, 10);
+        assertEq(user1Balance, 100000e6);
+        (,,,,,,,,, uint256 totalContributed,,) = fayhr.crowdfundTypes(1);
+        assertEq(totalContributed, 10e6);
     }
 
     function testClaimTokenWhenCancalCalled() public {
         vm.prank(seperateAdmin);
-        fahyr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1);
         vm.prank(user1);
-        fahyr.vote(1, true);
+        fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fahyr.startCrowdfund(1, 10, 0, 10, 100, 1000);
+        fayhr.startCrowdfund(1, 10e6, 0, 10, 100e6, 1000e6);
 
         vm.prank(user1);
-        token.approve(address(fahyr), 100);
+        token.approve(address(fayhr), 100e6);
         vm.prank(user1);
-        fahyr.delegateToken(1, 1);
+        fayhr.delegateToken(1, 1);
         vm.warp(block.timestamp + 20);
 
         vm.prank(seperateAdmin);
-        fahyr.cancelCrowdfund(1);
+        fayhr.cancelCrowdfund(1);
 
         vm.prank(user1);
-        fahyr.claimToken(1);
+        fayhr.claimToken(1);
 
         uint256 user1Balance = token.balanceOf(user1);
-        assertEq(user1Balance, 100000);
-        (,,,,,,,,, uint256 totalContributed,,) = fahyr.crowdfundTypes(1);
-        assertEq(totalContributed, 10);
+        assertEq(user1Balance, 100000e6);
+        (,,,,,,,,, uint256 totalContributed,,) = fayhr.crowdfundTypes(1);
+        assertEq(totalContributed, 10e6);
     }
 
     function testCancelCrowdfund() public {
         vm.prank(seperateAdmin);
-        fahyr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1);
         vm.prank(user1);
-        fahyr.vote(1, true);
+        fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fahyr.startCrowdfund(1, 1, 0, 10, 100, 1000);
+        fayhr.startCrowdfund(1, 1e6, 0, 10, 100e6, 1000e6);
 
         vm.prank(seperateAdmin);
-        fahyr.cancelCrowdfund(1);
+        fayhr.cancelCrowdfund(1);
 
-        (,,,,,,,,,, Fahyr.Authorization authorization,) = fahyr.crowdfundTypes(1);
-        assertEq(uint256(authorization), uint256(Fahyr.Authorization.cancel));
+        (,,,,,,,,,, Fayhr.Authorization authorization,) = fayhr.crowdfundTypes(1);
+        assertEq(uint256(authorization), uint256(Fayhr.Authorization.cancel));
     }
 
     function testRestartCanceledCrowdfund() public {
         vm.prank(seperateAdmin);
-        fahyr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1);
         vm.prank(user1);
-        fahyr.vote(1, true);
+        fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fahyr.startCrowdfund(1, 1, 0, 10, 100, 1000);
+        fayhr.startCrowdfund(1, 1e6, 0, 10, 10036, 1000e6);
 
         vm.prank(seperateAdmin);
-        fahyr.cancelCrowdfund(1);
+        fayhr.cancelCrowdfund(1);
 
         vm.prank(seperateAdmin);
-        fahyr.restartCanceledCrowdfund(1, 1, 0, 20, 200, 2000);
+        fayhr.restartCanceledCrowdfund(1, 1e6, 0, 20, 200e6, 2000e6);
 
         (
             ,
@@ -203,35 +204,35 @@ contract FahyrTest is Test {
             uint256 softCap,
             uint256 hardCap,
             ,
-            Fahyr.Authorization authorization,
+            Fayhr.Authorization authorization,
             bool closed
-        ) = fahyr.crowdfundTypes(1);
-        assertEq(slot, 1);
+        ) = fayhr.crowdfundTypes(1);
+        assertEq(slot, 1e6);
         assertTrue(startTime <= block.timestamp);
         assertTrue(endTime > block.timestamp);
-        assertEq(softCap, 200);
-        assertEq(hardCap, 2000);
+        assertEq(softCap, 200e6);
+        assertEq(hardCap, 2000e6);
         assertFalse(closed);
-        assertEq(uint256(authorization), uint256(Fahyr.Authorization.active));
+        assertEq(uint256(authorization), uint256(Fayhr.Authorization.active));
     }
 
     function testWithdrawCrowdfund() public {
         vm.prank(seperateAdmin);
-        fahyr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1);
         vm.prank(user1);
-        fahyr.vote(1, true);
+        fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fahyr.startCrowdfund(1, 1, 0, 10, 100, 1000);
+        fayhr.startCrowdfund(1, 1e6, 0, 10, 100e6, 1000e6);
 
         vm.prank(user1);
-        token.approve(address(fahyr), 1000);
+        token.approve(address(fayhr), 1000e6);
         vm.prank(user1);
-        fahyr.delegateToken(1, 1000);
+        fayhr.delegateToken(1, 1000);
 
         vm.warp(block.timestamp + 20);
 
         vm.prank(seperateAdmin);
-        fahyr.withdrawCrowdfund(1);
+        fayhr.withdrawCrowdfund(1);
 
         // Check balances after withdrawal
         uint256 adminBalance = token.balanceOf(seperateAdmin);
@@ -239,38 +240,53 @@ contract FahyrTest is Test {
         uint256 testContractBalance = token.balanceOf(address(this));
 
         // Ensure the tokens have been withdrawn correctly
-        assertEq(adminBalance, 1000); // separateAdmin gets 1000 tokens
-        assertEq(user1Balance, 99000); // user1 balance after delegation
+        assertEq(adminBalance, 1000e6); // separateAdmin gets 1000 tokens
+        assertEq(user1Balance, 99000e6); // user1 balance after delegation
 
         // Ensure the test contract balance is correctly updated
-        assertEq(testContractBalance, 999999999999999999800000); // initial 1 million minus tokens sent to user1 and user2
+        assertEq(testContractBalance, 999800000000000); // initial 1 million minus tokens sent to user1 and user2
+    }
+
+    function testReceiveWIthWrongFunction() public {
+        vm.prank(user1);
+        (bool success, ) = address(fayhr).call{value: 10 ether}("0x12345");
+        assertFalse(success, "Transaction Should Fail, No throwback Function");
+        uint256 contractBalance = address(fayhr).balance;
+        assertEq(contractBalance, 0 ether, "Balance Should Be 0 Ether");
+    }
+    function testReceive() public {
+      vm.prank(user1);
+        (bool success, ) = address(fayhr).call{value: 10 ether}("");
+        assertTrue(success, "Receive Function Should be Called");
+        uint256 contractBalance = address(fayhr).balance;
+        assertEq(contractBalance, 10 ether, "Balance Should Be 10 Ether");  
     }
 
     function testDeleteContract() public {
         vm.prank(seperateAdmin);
-        fahyr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1);
         vm.prank(user1);
-        fahyr.vote(1, true);
+        fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fahyr.startCrowdfund(1, 1, 0, 10, 100, 1000);
+        fayhr.startCrowdfund(1, 1e6, 0, 10, 100e6, 1000e6);
 
         vm.prank(user1);
-        token.approve(address(fahyr), 100);
+        token.approve(address(fayhr), 100e6);
         vm.prank(user1);
-        fahyr.delegateToken(1, 1);
+        fayhr.delegateToken(1, 1);
 
         // Delete the contract
-        uint256 contractTokenBalanceBefore = token.balanceOf(address(fahyr));
+        uint256 contractTokenBalanceBefore = token.balanceOf(address(fayhr));
         uint256 adminBalanceBefore = token.balanceOf(seperateAdmin);
 
         vm.prank(seperateAdmin);
-        fahyr.deleteContract();
+        fayhr.deleteContract();
 
-        uint256 contractTokenBalanceAfter = token.balanceOf(address(fahyr));
+        uint256 contractTokenBalanceAfter = token.balanceOf(address(fayhr));
         uint256 adminBalanceAfter = token.balanceOf(seperateAdmin);
 
         // Ensure the contract is inactive
-        assertTrue(!fahyr.isActive());
+        assertTrue(!fayhr.isActive());
 
         // Ensure the contract token balance is transferred to the admin
         assertEq(contractTokenBalanceAfter, 0);

@@ -4,7 +4,7 @@ pragma solidity ^0.8.26;
 // import 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/IERC20.sol';
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract Fahyr {
+contract Fayhr {
     IERC20 public token;
     address payable private admin;
     uint256 public nextCrowdfundId;
@@ -46,6 +46,7 @@ contract Fahyr {
     event TokenClaimed(uint256 id, uint256 amount);
     event CrowdfundCanceled(uint256 id);
     event CrowdfundWithdrawn(uint256 id, uint256 amount);
+    event nonFunctionDeposit(address sender, uint256 amount);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Only Admin can use this function");
@@ -155,7 +156,7 @@ contract Fahyr {
     }
 
     function approveToken() external onlyWhenActive {
-        require(token.approve(address(this), 1e36), "Token Approval Unsuccessful");
+        require(token.approve(address(this), 1e15), "Token Approval Unsuccessful");
     }
 
     function deapproveToken() external onlyWhenActive {
@@ -260,6 +261,10 @@ contract Fahyr {
         crowdfundTypes[crowdfundId].totalContributed = 0;
         require(token.transfer(address(msg.sender), withdrawalAmount), "Withdrawal Failed");
         emit CrowdfundWithdrawn(crowdfundId, withdrawalAmount);
+    }
+
+    receive() external payable {
+        emit nonFunctionDeposit(msg.sender, msg.value);
     }
 
     function deleteContract() external onlyAdmin onlyWhenActive {
