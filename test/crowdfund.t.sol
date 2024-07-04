@@ -18,6 +18,7 @@ contract FahyrTest is Test {
         user1 = address(0x1);
         user2 = address(0x2);
         seperateAdmin = address(0x3);
+        
 
         token = new TestToken();
         fayhr = new Fayhr(seperateAdmin, address(token)); // Corrected variable name
@@ -99,6 +100,8 @@ contract FahyrTest is Test {
         vm.prank(seperateAdmin);
         fayhr.startCrowdfund(1, 10e6, 0, 10, 100e6, 1000e6);
 
+        vm.warp(block.timestamp + 2);
+
         vm.prank(user1);
         token.approve(address(fayhr), 100e6);
         // Logging the initial state of totalContributed before delegation
@@ -123,6 +126,8 @@ contract FahyrTest is Test {
         vm.prank(seperateAdmin);
         fayhr.startCrowdfund(1, 10e6, 0, 10, 100e6, 1000e6);
 
+        vm.warp(block.timestamp + 2);
+
         vm.prank(user1);
         token.approve(address(fayhr), 100e6);
         vm.prank(user1);
@@ -145,6 +150,8 @@ contract FahyrTest is Test {
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
         fayhr.startCrowdfund(1, 10e6, 0, 10, 100e6, 1000e6);
+
+        vm.warp(block.timestamp + 2);
 
         vm.prank(user1);
         token.approve(address(fayhr), 100e6);
@@ -224,6 +231,8 @@ contract FahyrTest is Test {
         vm.prank(seperateAdmin);
         fayhr.startCrowdfund(1, 1e6, 0, 10, 100e6, 1000e6);
 
+        vm.warp(block.timestamp + 2);
+
         vm.prank(user1);
         token.approve(address(fayhr), 1000e6);
         vm.prank(user1);
@@ -270,6 +279,8 @@ contract FahyrTest is Test {
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
         fayhr.startCrowdfund(1, 1e6, 0, 10, 100e6, 1000e6);
+
+        vm.warp(block.timestamp + 2);
 
         vm.prank(user1);
         token.approve(address(fayhr), 100e6);

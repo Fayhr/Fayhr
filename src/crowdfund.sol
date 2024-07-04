@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-// import 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/IERC20.sol';
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/IERC20.sol";
+// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/ReentrancyGuard.sol";
 
-contract Fayhr {
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+contract Fayhr is ReentrancyGuard {
     IERC20 public token;
     address payable private admin;
     uint256 public nextCrowdfundId;
@@ -110,7 +113,7 @@ contract Fayhr {
     }
 
     function createCrowdfund(uint256 crowdfundId) internal {
-        if (crowdfundTypes[crowdfundId].availableYesVotes >= crowdfundTypes[crowdfundId].requiredYesVotes) {
+        if (crowdfundTypes[crowdfundId].availableYesVotes == crowdfundTypes[crowdfundId].requiredYesVotes) {
             crowdfundTypes[crowdfundId].authorization = Authorization.active;
             crowdfundTypes[crowdfundId].closed = true;
             crowdfundTypes[crowdfundId].pollClosed = true;
@@ -140,7 +143,7 @@ contract Fayhr {
         uint256 _hardCap
     ) external onlyAdmin onlyWhenActive {
         require(crowdfundTypes[crowdfundId].id != 0, "Crowdfund Doesn't Exist");
-        require(_endTime > _startTime, "Endtime Must be Greater Than Starttime");
+        require(_endTime > _startTime, "Endtime not > Starttime");
         require(crowdfundTypes[crowdfundId].authorization == Authorization.active, "Crowdfund Not Activated");
         crowdfundTypes[crowdfundId].slot = _slot;
         crowdfundTypes[crowdfundId].startTime = block.timestamp + _startTime;
@@ -170,12 +173,12 @@ contract Fayhr {
     function delegateToken(uint256 crowdfundId, uint256 _slotUnit) external onlyWhenActive {
         require(
             crowdfundTypes[crowdfundId].authorization == Authorization.active && !crowdfundTypes[crowdfundId].closed,
-            "Crowdfund not Active or is Closed"
+            "Crowdfund not Active / Closed"
         );
         require(
-            block.timestamp >= crowdfundTypes[crowdfundId].startTime
-                && block.timestamp <= crowdfundTypes[crowdfundId].endTime,
-            "Contribution Is Not Within the Allowed Timeframe"
+            block.timestamp > crowdfundTypes[crowdfundId].startTime
+                && block.timestamp < crowdfundTypes[crowdfundId].endTime,
+            "Delegation Time Ended"
         );
         uint256 delegateAmount = crowdfundTypes[crowdfundId].slot * _slotUnit;
         require(delegateAmount % crowdfundTypes[crowdfundId].slot == 0, "Inappropriate Slot Unit");
@@ -183,10 +186,10 @@ contract Fayhr {
         require(token.transferFrom(address(msg.sender), address(this), delegateAmount), "Contribution Failed");
         crowdfundTypes[crowdfundId].totalContributed += delegateAmount;
         crowdfundTypes[crowdfundId].contributions[msg.sender] += delegateAmount;
-        if (crowdfundTypes[crowdfundId].totalContributed >= crowdfundTypes[crowdfundId].hardCap) {
+        if (crowdfundTypes[crowdfundId].totalContributed == crowdfundTypes[crowdfundId].hardCap) {
             crowdfundTypes[crowdfundId].closed = true;
         } else if (
-            crowdfundTypes[crowdfundId].totalContributed >= crowdfundTypes[crowdfundId].softCap
+            crowdfundTypes[crowdfundId].totalContributed > crowdfundTypes[crowdfundId].softCap
                 && block.timestamp > crowdfundTypes[crowdfundId].endTime
         ) {
             crowdfundTypes[crowdfundId].closed = true;
@@ -194,9 +197,9 @@ contract Fayhr {
         emit TokenDelegated(crowdfundId, delegateAmount, _slotUnit);
     }
 
-    function claimToken(uint256 crowdfundId) external onlyWhenActive {
+    function claimToken(uint256 crowdfundId) external onlyWhenActive nonReentrant {
         if (
-            crowdfundTypes[crowdfundId].totalContributed < crowdfundTypes[crowdfundId].softCap
+            crowdfundTypes[crowdfundId].totalContributed <= crowdfundTypes[crowdfundId].softCap
                 && block.timestamp > crowdfundTypes[crowdfundId].endTime
         ) {
             crowdfundTypes[crowdfundId].closed = true;
@@ -205,10 +208,10 @@ contract Fayhr {
         require(
             crowdfundTypes[crowdfundId].totalContributed < crowdfundTypes[crowdfundId].softCap
                 || crowdfundTypes[crowdfundId].authorization == Authorization.cancel,
-            "Softcap Reached or Admin Hasn't Canceled Crowdfund"
+            "Softcap Reached / Crowdfund Not Canceled"
         );
         uint256 claimAmount = crowdfundTypes[crowdfundId].contributions[msg.sender];
-        require(claimAmount > 0, "No Contribution To Claim");
+        require(claimAmount != 0, "No Funds Available");
         crowdfundTypes[crowdfundId].contributions[msg.sender] = 0;
         require(token.transfer(address(msg.sender), claimAmount), "Claim Failed");
         emit TokenClaimed(crowdfundId, claimAmount);
@@ -231,9 +234,9 @@ contract Fayhr {
         require(crowdfundTypes[crowdfundId].id != 0, "Crowdfund Doesn't Exist");
         require(
             crowdfundTypes[crowdfundId].totalContributed == 0,
-            "Funds in this Crowdfund Have Not Been Fully Claimed Yet, Wait or Create Another Crowdfund"
+            "Funds Not Claimed, Wait or Create New Entry"
         );
-        require(_endTime > _startTime, "Endtime Must be Greater Than Starttime");
+        require(_endTime > _startTime, "Endtime not > Starttime");
         crowdfundTypes[crowdfundId].authorization = Authorization.active;
         crowdfundTypes[crowdfundId].slot = _slot;
         crowdfundTypes[crowdfundId].startTime = block.timestamp + _startTime;
@@ -252,14 +255,14 @@ contract Fayhr {
     }
 
     function withdrawCrowdfund(uint256 crowdfundId) external onlyAdmin onlyWhenActive {
-        require(crowdfundTypes[crowdfundId].closed, "Crowdfund Is Not Closed");
+        require(crowdfundTypes[crowdfundId].closed, "Crowdfund Not Closed");
         require(
-            crowdfundTypes[crowdfundId].authorization == Authorization.active, "Admin Already Canceled This Crowdfund"
+            crowdfundTypes[crowdfundId].authorization == Authorization.active, "Crowdfund Already Canceled"
         );
         require(
-            crowdfundTypes[crowdfundId].totalContributed >= crowdfundTypes[crowdfundId].softCap
-                || crowdfundTypes[crowdfundId].totalContributed >= crowdfundTypes[crowdfundId].hardCap,
-            "None Of The Caps Have Been Reached"
+            crowdfundTypes[crowdfundId].totalContributed > crowdfundTypes[crowdfundId].softCap
+                || crowdfundTypes[crowdfundId].totalContributed == crowdfundTypes[crowdfundId].hardCap,
+            "Delegate Caps Not Reached"
         );
         uint256 withdrawalAmount = crowdfundTypes[crowdfundId].totalContributed;
         crowdfundTypes[crowdfundId].totalContributed = 0;
