@@ -107,10 +107,19 @@ contract DeployFayhr is Script {
         vm.warp(block.timestamp + 2 days);
 
         vm.startBroadcast(user1);
-        address(fayhr).call{value: 10 ether}("");
-        console.log("Free Ether Sent By:", user1);
-        address(fayhr).call{value: 10 ether}("0x1234");
-        console.log("Rejected Malicious Function Calling By:", user1);
+        (bool success, ) = address(fayhr).call{value: 10 ether}("");
+        if (success) {
+            console.log("Free Ether Sent By:", user1);
+        } else {
+            console.log("Transaction Failed", user1);
+        }
+
+        (success, ) = address(fayhr).call{value: 10 ether}("0x1234");
+        if (success) {
+            console.log("Malicious transaction Success!:", user1);
+        } else {
+            console.log("Malicious Transaction Rejected", user1);
+        }
         vm.stopBroadcast();
 
         vm.startBroadcast(admin);
