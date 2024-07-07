@@ -14,6 +14,7 @@ contract Fayhr is ReentrancyGuard {
     bool public isActive;
     mapping(uint256 => mapping(address => bool)) public hasVoted;
     mapping(uint256 => CrowdfundType) public crowdfundTypes;
+    mapping(uint256 => mapping(address => uint256)) public contributions;
 
     enum Authorization {
         inactive,
@@ -35,7 +36,7 @@ contract Fayhr is ReentrancyGuard {
         Authorization authorization;
         bool closed;
         bool pollClosed;
-        mapping(address => uint256) contributions;
+        // mapping(address => uint256) contributions;
     }
 
     event PollCreated(uint256 id, string name);
@@ -85,19 +86,20 @@ contract Fayhr is ReentrancyGuard {
             nextCrowdfundId++;
         }
 
-        crowdfundTypes[newCrowdfundId].id = newCrowdfundId;
-        crowdfundTypes[newCrowdfundId].name = _name;
-        crowdfundTypes[newCrowdfundId].requiredYesVotes = _requiredYesVotes;
-        crowdfundTypes[newCrowdfundId].availableYesVotes = 0;
-        crowdfundTypes[newCrowdfundId].slot = 0;
-        crowdfundTypes[newCrowdfundId].startTime = 0;
-        crowdfundTypes[newCrowdfundId].endTime = 0;
-        crowdfundTypes[newCrowdfundId].softCap = 0;
-        crowdfundTypes[newCrowdfundId].hardCap = 0;
-        crowdfundTypes[newCrowdfundId].totalContributed = 0;
-        crowdfundTypes[newCrowdfundId].authorization = Authorization.inactive;
-        crowdfundTypes[newCrowdfundId].closed = false;
-        crowdfundTypes[newCrowdfundId].pollClosed = false;
+        CrowdfundType storage newCrowdfundType = crowdfundTypes[crowdfundId];
+        newCrowdfundType.id = newCrowdfundId;
+        newCrowdfundType.name = _name;
+        newCrowdfundType.requiredYesVotes = _requiredYesVotes;
+        newCrowdfundType.availableYesVotes = 0;
+        newCrowdfundType.slot = 0;
+        newCrowdfundType.startTime = 0;
+        newCrowdfundType.endTime = 0;
+        newCrowdfundType.softCap = 0;
+        newCrowdfundType.hardCap = 0;
+        newCrowdfundType.totalContributed = 0;
+        newCrowdfundType.authorization = Authorization.inactive;
+        newCrowdfundType.closed = false;
+        newCrowdfundType.pollClosed = false;
 
         emit PollCreated(newCrowdfundId, _name);
     }
@@ -180,7 +182,7 @@ contract Fayhr is ReentrancyGuard {
         require(token.balanceOf(msg.sender) >= delegateAmount, "Insufficient Token Balance");
         require(token.transferFrom(address(msg.sender), address(this), delegateAmount), "Contribution Failed");
         crowdfundTypes[crowdfundId].totalContributed += delegateAmount;
-        crowdfundTypes[crowdfundId].contributions[msg.sender] += delegateAmount;
+        contributions[crowdfundId][msg.sender] += delegateAmount;
         if (crowdfundTypes[crowdfundId].totalContributed == crowdfundTypes[crowdfundId].hardCap) {
             crowdfundTypes[crowdfundId].closed = true;
         } else if (
@@ -205,9 +207,9 @@ contract Fayhr is ReentrancyGuard {
                 || crowdfundTypes[crowdfundId].authorization == Authorization.cancel,
             "Softcap Reached / Crowdfund Not Canceled"
         );
-        uint256 claimAmount = crowdfundTypes[crowdfundId].contributions[msg.sender];
+        uint256 claimAmount = contributions[crowdfundId][msg.sender];
         require(claimAmount != 0, "No Funds Available");
-        crowdfundTypes[crowdfundId].contributions[msg.sender] = 0;
+        contributions[crowdfundId][msg.sender] = 0;
         require(token.transfer(address(msg.sender), claimAmount), "Claim Failed");
         emit TokenClaimed(crowdfundId, claimAmount);
     }
