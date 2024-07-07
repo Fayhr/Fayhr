@@ -14,7 +14,6 @@ contract Fayhr is ReentrancyGuard {
     bool public isActive;
     mapping(uint256 => mapping(address => bool)) public hasVoted;
     mapping(uint256 => CrowdfundType) public crowdfundTypes;
-    mapping(uint256 => mapping(address => uint256)) public contributions;
 
     enum Authorization {
         inactive,
@@ -36,7 +35,7 @@ contract Fayhr is ReentrancyGuard {
         Authorization authorization;
         bool closed;
         bool pollClosed;
-        // mapping(address => uint256) contributions;
+        mapping(address => uint256) contributions;
     }
 
     event PollCreated(uint256 id, string name);
@@ -71,84 +70,52 @@ contract Fayhr is ReentrancyGuard {
     }
 
     function createPoll(uint256 crowdfundId, string memory _name, uint256 _requiredYesVotes)
-        external
-        onlyAdmin
-        onlyWhenActive
-    {
-        require(crowdfundTypes[crowdfundId].id == 0, "Crowdfund ID already exists!");
-        uint256 newCrowdfundId = 0;
-        if (crowdfundId == 1) {
-            nextCrowdfundId = 1;
-            newCrowdfundId = nextCrowdfundId;
-            nextCrowdfundId++;
-        } else if (crowdfundId > 1) {
-            newCrowdfundId = nextCrowdfundId;
-            nextCrowdfundId++;
-        }
-        CrowdfundType memory newCrowdfundType = crowdfundTypes[newCrowdfundId];
-        newCrowdfundType.id = newCrowdfundId;
-        newCrowdfundType.name = _name;
-        newCrowdfundType.requiredYesVotes = _requiredYesVotes;
-        newCrowdfundType.availableYesVotes = 0;
-        newCrowdfundType.slot = 0;
-        newCrowdfundType.startTime = 0;
-        newCrowdfundType.endTime = 0;
-        newCrowdfundType.softCap = 0;
-        newCrowdfundType.hardCap = 0;
-        newCrowdfundType.totalContributed = 0;
-        newCrowdfundType.authorization = Authorization.inactive;
-        newCrowdfundType.closed = false;
-        newCrowdfundType.pollClosed = false;
-        crowdfundTypes[newCrowdfundId] = newCrowdfundType;
+    external
+    onlyAdmin
+    onlyWhenActive {
+     require(crowdfundTypes[crowdfundId].id == 0, "Crowdfund ID already exists!");
+     uint256 newCrowdfundId = 0;
+      if (crowdfundId == 1) {
+        nextCrowdfundId = 1;
+        newCrowdfundId = nextCrowdfundId;
+        nextCrowdfundId++;
+      } else if (crowdfundId > 1) {
+        newCrowdfundId = nextCrowdfundId;
+        nextCrowdfundId++;
+      }
 
-        emit PollCreated(newCrowdfundId, _name);
+      crowdfundTypes[newCrowdfundId].id = newCrowdfundId;
+      crowdfundTypes[newCrowdfundId].name = _name;
+      crowdfundTypes[newCrowdfundId].requiredYesVotes = _requiredYesVotes;
+      crowdfundTypes[newCrowdfundId].availableYesVotes = 0;
+      crowdfundTypes[newCrowdfundId].slot = 0;
+      crowdfundTypes[newCrowdfundId].startTime = 0;
+      crowdfundTypes[newCrowdfundId].endTime = 0;
+      crowdfundTypes[newCrowdfundId].softCap = 0;
+      crowdfundTypes[newCrowdfundId].hardCap = 0;
+      crowdfundTypes[newCrowdfundId].totalContributed = 0;
+      crowdfundTypes[newCrowdfundId].authorization = Authorization.inactive;
+      crowdfundTypes[newCrowdfundId].closed = false;
+      crowdfundTypes[newCrowdfundId].pollClosed = false;
+
+      emit PollCreated(newCrowdfundId, _name);
     }
 
-    function vote(uint256 crowdfundId, bool choice) external onlyWhenActive {
-         CrowdfundType memory tempCrowdfund = crowdfundTypes[crowdfundId];
-         bool voted = hasVoted[crowdfundId][msg.sender];
-         require(!tempCrowdfund.pollClosed, "Poll Closed");
-         require(tempCrowdfund.id != 0, "Crowdfund Doesn't Exist!");
-         require(!voted, "Already Voted");
 
-        // require(crowdfundTypes[crowdfundId].pollClosed != true, "Poll Closed");
-        // require(crowdfundTypes[crowdfundId].id != 0, "Crowdfund Doesn't Exist!");
-        // require(!hasVoted[crowdfundId][msg.sender], "Already Voted");
-        // hasVoted[crowdfundId][msg.sender] = true;
+    function vote(uint256 crowdfundId, bool choice) external onlyWhenActive {
+        require(crowdfundTypes[crowdfundId].pollClosed != true, "Poll Closed");
+        require(crowdfundTypes[crowdfundId].id != 0, "Crowdfund Doesn't Exist!");
+        require(!hasVoted[crowdfundId][msg.sender], "Already Voted");
         hasVoted[crowdfundId][msg.sender] = true;
+        
         if (choice) {
-            tempCrowdfund.availableYesVotes++;
-        }
-        crowdfundTypes[crowdfundId] = tempCrowdfund;
-        /** if (choice) {
             crowdfundTypes[crowdfundId].availableYesVotes++;
         }
-        */
         createCrowdfund(crowdfundId);
     }
 
     function createCrowdfund(uint256 crowdfundId) internal {
-        CrowdfundType memory tempCrowdfund = crowdfundTypes[crowdfundId];
-
-        if (tempCrowdfund.availableYesVotes == tempCrowdfund.requiredYesVotes) {
-            tempCrowdfund.authorization = Authorization.active;
-            // tempCrowdfund.authorization = Authorization.active;
-            tempCrowdfund.closed = true;
-            tempCrowdfund.pollClosed = true;
-
-            crowdfundTypes[crowdfundId] = tempCrowdfund;
-
-            emit CrowdfundCreated(
-                crowdfundId,
-                tempCrowdfund.slot,
-                tempCrowdfund.startTime,
-                tempCrowdfund.endTime,
-                tempCrowdfund.softCap,
-                tempCrowdfund.hardCap
-            );
-        }
-    
-        /** if (crowdfundTypes[crowdfundId].availableYesVotes == crowdfundTypes[crowdfundId].requiredYesVotes) {
+        if (crowdfundTypes[crowdfundId].availableYesVotes == crowdfundTypes[crowdfundId].requiredYesVotes) {
             crowdfundTypes[crowdfundId].authorization = Authorization.active;
             crowdfundTypes[crowdfundId].closed = true;
             crowdfundTypes[crowdfundId].pollClosed = true;
@@ -161,52 +128,15 @@ contract Fayhr is ReentrancyGuard {
                 crowdfundTypes[crowdfundId].hardCap
             );
         }
-        */
     }
 
     function deleteCrowdfundAndPoll(uint256 crowdfundId) external onlyAdmin onlyWhenActive {
-        CrowdfundType memory tempCrowdfund = crowdfundTypes[crowdfundId];
-        require(tempCrowdfund.id != 0, "Poll/Crowdfund Doesn't Exist");
-        // require(crowdfundTypes[crowdfundId].id != 0, "Poll/Crowdfund Doesn't Exist");
+        require(crowdfundTypes[crowdfundId].id != 0, "Poll/Crowdfund Doesn't Exist");
         delete crowdfundTypes[crowdfundId];
         emit CrowdfundAndPollDeleted(crowdfundId);
     }
 
-     function startCrowdfund(
-        uint256 crowdfundId,
-        uint256 _slot,
-        uint256 _startTime,
-        uint256 _endTime,
-        uint256 _softCap,
-        uint256 _hardCap
-    ) external onlyAdmin onlyWhenActive {
-        CrowdfundType memory tempCrowdfund = crowdfundTypes[crowdfundId];
-
-        require(tempCrowdfund.id != 0, "Crowdfund Doesn't Exist");
-        require(_endTime > _startTime, "Endtime not > Starttime");
-        require(tempCrowdfund.authorization == Authorization.active, "Crowdfund Not Activated");
-
-        tempCrowdfund.slot = _slot;
-        tempCrowdfund.startTime = block.timestamp + _startTime;
-        tempCrowdfund.endTime = block.timestamp + _endTime;
-        tempCrowdfund.softCap = _softCap;
-        tempCrowdfund.hardCap = _hardCap;
-        tempCrowdfund.totalContributed = 0;
-        tempCrowdfund.closed = false;
-
-        crowdfundTypes[crowdfundId] = tempCrowdfund;
-
-        emit CrowdfundStarted(
-            crowdfundId,
-            _slot,
-            tempCrowdfund.startTime,
-            tempCrowdfund.endTime,
-            _softCap,
-            _hardCap
-        );
-    }
-
-    /** function startCrowdfund(
+    function startCrowdfund(
         uint256 crowdfundId,
         uint256 _slot,
         uint256 _startTime,
@@ -227,12 +157,12 @@ contract Fayhr is ReentrancyGuard {
         emit CrowdfundStarted(
             crowdfundId,
             _slot,
-            crowdfundTypes[crowdfundId].startTime,
-            crowdfundTypes[crowdfundId].endTime,
+            _startTime,
+            _endTime,
             _softCap,
             _hardCap
         );
-    } */
+    }
 
     function approveToken() external onlyWhenActive {
         require(token.approve(address(this), 1e15), "Token Approval Unsuccessful");
@@ -243,37 +173,6 @@ contract Fayhr is ReentrancyGuard {
     }
 
     function delegateToken(uint256 crowdfundId, uint256 _slotUnit) external onlyWhenActive {
-        CrowdfundType memory tempCrowdfund = crowdfundTypes[crowdfundId];
-
-        require(
-            tempCrowdfund.authorization == Authorization.active && !tempCrowdfund.closed,
-            "Crowdfund not Active / Closed"
-        );
-        require(
-            block.timestamp > tempCrowdfund.startTime && block.timestamp < tempCrowdfund.endTime,
-            "Delegation Time Ended"
-        );
-        uint256 delegateAmount = tempCrowdfund.slot * _slotUnit;
-        require(delegateAmount % tempCrowdfund.slot == 0, "Inappropriate Slot Unit");
-        require(token.balanceOf(msg.sender) >= delegateAmount, "Insufficient Token Balance");
-        require(token.transferFrom(msg.sender, address(this), delegateAmount), "Contribution Failed");
-
-        tempCrowdfund.totalContributed += delegateAmount;
-        contributions[crowdfundId][msg.sender] += delegateAmount;
-        
-        if (tempCrowdfund.totalContributed == tempCrowdfund.hardCap) {
-            tempCrowdfund.closed = true;
-        } else if (
-            tempCrowdfund.totalContributed > tempCrowdfund.softCap && block.timestamp > tempCrowdfund.endTime
-        ) {
-            tempCrowdfund.closed = true;
-        }
-
-        crowdfundTypes[crowdfundId] = tempCrowdfund;
-
-        emit TokenDelegated(crowdfundId, delegateAmount, _slotUnit);
-    } 
-    /** function delegateToken(uint256 crowdfundId, uint256 _slotUnit) external onlyWhenActive {
         require(
             crowdfundTypes[crowdfundId].authorization == Authorization.active && !crowdfundTypes[crowdfundId].closed,
             "Crowdfund not Active / Closed"
@@ -299,35 +198,30 @@ contract Fayhr is ReentrancyGuard {
         }
         emit TokenDelegated(crowdfundId, delegateAmount, _slotUnit);
     }
-    */
 
     function claimToken(uint256 crowdfundId) external onlyWhenActive nonReentrant {
-        CrowdfundType memory tempCrowdfund = crowdfundTypes[crowdfundId];
         if (
-            tempCrowdfund.totalContributed <= tempCrowdfund.softCap
-                && block.timestamp > tempCrowdfund.endTime
+            crowdfundTypes[crowdfundId].totalContributed <= crowdfundTypes[crowdfundId].softCap
+                && block.timestamp > crowdfundTypes[crowdfundId].endTime
         ) {
-            tempCrowdfund.closed = true;
+            crowdfundTypes[crowdfundId].closed = true;
         }
-        require(tempCrowdfund.closed, "Crowdfund Is Not Closed");
+        require(crowdfundTypes[crowdfundId].closed, "Crowdfund Is Not Closed");
         require(
-            tempCrowdfund.totalContributed < tempCrowdfund.softCap
-                || tempCrowdfund.authorization == Authorization.cancel,
+            crowdfundTypes[crowdfundId].totalContributed < crowdfundTypes[crowdfundId].softCap
+                || crowdfundTypes[crowdfundId].authorization == Authorization.cancel,
             "Softcap Reached / Crowdfund Not Canceled"
         );
-        uint256 claimAmount = contributions[crowdfundId][msg.sender];
+        uint256 claimAmount = crowdfundTypes[crowdfundId].contributions[msg.sender];
         require(claimAmount != 0, "No Funds Available");
-        contributions[crowdfundId][msg.sender] = 0;
+        crowdfundTypes[crowdfundId].contributions[msg.sender] = 0;
         require(token.transfer(address(msg.sender), claimAmount), "Claim Failed");
-        crowdfundTypes[crowdfundId] = tempCrowdfund;
         emit TokenClaimed(crowdfundId, claimAmount);
     }
 
     function cancelCrowdfund(uint256 crowdfundId) external onlyAdmin onlyWhenActive {
-        CrowdfundType memory tempCrowdfund = crowdfundTypes[crowdfundId];
-        tempCrowdfund.closed = true;
-        tempCrowdfund.authorization = Authorization.cancel;
-        crowdfundTypes[crowdfundId] = tempCrowdfund;
+        crowdfundTypes[crowdfundId].closed = true;
+        crowdfundTypes[crowdfundId].authorization = Authorization.cancel;
         emit CrowdfundCanceled(crowdfundId);
     }
 
@@ -339,46 +233,42 @@ contract Fayhr is ReentrancyGuard {
         uint256 _softCap,
         uint256 _hardCap
     ) external onlyAdmin onlyWhenActive {
-        CrowdfundType memory tempCrowdfund = crowdfundTypes[crowdfundId];
-        require(tempCrowdfund.id != 0, "Crowdfund Doesn't Exist");
+        require(crowdfundTypes[crowdfundId].id != 0, "Crowdfund Doesn't Exist");
         require(
-            tempCrowdfund.totalContributed == 0,
+            crowdfundTypes[crowdfundId].totalContributed == 0,
             "Funds Not Claimed, Wait or Create New Entry"
         );
         require(_endTime > _startTime, "Endtime not > Starttime");
-        tempCrowdfund.authorization = Authorization.active;
-        tempCrowdfund.slot = _slot;
-        tempCrowdfund.startTime = block.timestamp + _startTime;
-        tempCrowdfund.endTime = block.timestamp + _endTime;
-        tempCrowdfund.softCap = _softCap;
-        tempCrowdfund.hardCap = _hardCap;
-        tempCrowdfund.closed = false;
-        crowdfundTypes[crowdfundId] = tempCrowdfund;
+        crowdfundTypes[crowdfundId].authorization = Authorization.active;
+        crowdfundTypes[crowdfundId].slot = _slot;
+        crowdfundTypes[crowdfundId].startTime = block.timestamp + _startTime;
+        crowdfundTypes[crowdfundId].endTime = block.timestamp + _endTime;
+        crowdfundTypes[crowdfundId].softCap = _softCap;
+        crowdfundTypes[crowdfundId].hardCap = _hardCap;
+        crowdfundTypes[crowdfundId].closed = false;
         emit CrowdfundStarted(
             crowdfundId,
             _slot,
-            tempCrowdfund.startTime,
-            tempCrowdfund.endTime,
+            _startTime,
+            _endTime,
             _softCap,
             _hardCap
         );
     }
 
     function withdrawCrowdfund(uint256 crowdfundId) external onlyAdmin onlyWhenActive {
-        CrowdfundType memory tempCrowdfund = crowdfundTypes[crowdfundId];
-        require(tempCrowdfund.closed, "Crowdfund Not Closed");
+        require(crowdfundTypes[crowdfundId].closed, "Crowdfund Not Closed");
         require(
-            tempCrowdfund.authorization == Authorization.active, "Crowdfund Already Canceled"
+            crowdfundTypes[crowdfundId].authorization == Authorization.active, "Crowdfund Already Canceled"
         );
         require(
-            tempCrowdfund.totalContributed > tempCrowdfund.softCap
-                || tempCrowdfund.totalContributed == tempCrowdfund.hardCap,
+            crowdfundTypes[crowdfundId].totalContributed > crowdfundTypes[crowdfundId].softCap
+                || crowdfundTypes[crowdfundId].totalContributed == crowdfundTypes[crowdfundId].hardCap,
             "Delegate Caps Not Reached"
         );
-        uint256 withdrawalAmount = tempCrowdfund.totalContributed;
-        tempCrowdfund.totalContributed = 0;
+        uint256 withdrawalAmount = crowdfundTypes[crowdfundId].totalContributed;
+        crowdfundTypes[crowdfundId].totalContributed = 0;
         require(token.transfer(address(msg.sender), withdrawalAmount), "Withdrawal Failed");
-        crowdfundTypes[crowdfundId] = tempCrowdfund;
         emit CrowdfundWithdrawn(crowdfundId, withdrawalAmount);
     }
 
