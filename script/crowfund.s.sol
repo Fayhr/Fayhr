@@ -37,12 +37,12 @@ contract DeployFayhr is Script {
         vm.stopBroadcast();
 
         vm.startBroadcast(admin);
-        fayhr.startCrowdfund(1, 1e6, 0, 10, 100e6, 1000e6);
+        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18);
         console.log("crowdfund started by:", admin);
         vm.stopBroadcast();
 
-        testToken.transfer(user1, 100000e6);
-        testToken.transfer(user2, 100000e6);
+        testToken.transfer(user1, 100000e18);
+        testToken.transfer(user2, 100000e18);
 
         vm.deal(user1, 100 ether);
 
@@ -76,7 +76,7 @@ contract DeployFayhr is Script {
         vm.stopBroadcast();
 
         vm.startBroadcast(admin);
-        fayhr.startCrowdfund(2, 1e6, 0, 10, 100e6, 1000e6);
+        fayhr.startCrowdfund(2, 1e18, 0, 10, 100e18, 1000e18);
         console.log("crowdfund started by:", admin);
         vm.stopBroadcast();
 
@@ -100,21 +100,21 @@ contract DeployFayhr is Script {
         vm.startBroadcast();
 
         vm.startBroadcast(admin);
-        fayhr.restartCanceledCrowdfund(2, 1e6, 0, 10, 100e6, 1000e6);
+        fayhr.restartCanceledCrowdfund(2, 1e18, 0, 10, 100e18, 1000e18);
         console.log("Crowdfund Restarted By:", admin);
         vm.stopBroadcast();
 
         vm.warp(block.timestamp + 2 days);
 
         vm.startBroadcast(user1);
-        (bool success, ) = address(fayhr).call{value: 10 ether}("");
+        (bool success,) = address(fayhr).call{value: 10 ether}("");
         if (success) {
             console.log("Free Ether Sent By:", user1);
         } else {
             console.log("Transaction Failed", user1);
         }
 
-        (success, ) = address(fayhr).call{value: 10 ether}("0x1234");
+        (success,) = address(fayhr).call{value: 10 ether}("0x1234");
         if (success) {
             console.log("Malicious transaction Success!:", user1);
         } else {

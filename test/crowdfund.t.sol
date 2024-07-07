@@ -18,14 +18,13 @@ contract FahyrTest is Test {
         user1 = address(0x1);
         user2 = address(0x2);
         seperateAdmin = address(0x3);
-        
 
         token = new TestToken();
         fayhr = new Fayhr(seperateAdmin, address(token)); // Corrected variable name
 
         // Distribute tokens to users
-        token.transfer(user1, 100000e6);
-        token.transfer(user2, 100000e6);
+        token.transfer(user1, 100000e18);
+        token.transfer(user2, 100000e18);
         vm.deal(user1, 100 ether);
     }
 
@@ -75,15 +74,15 @@ contract FahyrTest is Test {
         uint256 gasBefore = gasleft();
 
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 1e6, 0, 10, 100e6, 1000e6);
+        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18);
         uint256 gasAfter = gasleft();
         (,,,, uint256 slot, uint256 startTime, uint256 endTime, uint256 softCap, uint256 hardCap,,, bool closed,) =
             fayhr.crowdfundTypes(1);
-        assertEq(slot, 1e6);
+        assertEq(slot, 1e18);
         assertTrue(startTime <= block.timestamp);
         assertTrue(endTime > block.timestamp);
-        assertEq(softCap, 100e6);
-        assertEq(hardCap, 1000e6);
+        assertEq(softCap, 100e18);
+        assertEq(hardCap, 1000e18);
         assertFalse(closed);
         uint256 gasUsed = gasBefore - gasAfter;
         emit log_named_uint("Gas Used By StartCrowdfund Function:", gasUsed);
@@ -91,14 +90,14 @@ contract FahyrTest is Test {
 
     function testApproveToken() public {
         vm.prank(user1);
-        token.approve(address(fayhr), 100e6);
+        token.approve(address(fayhr), 100e18);
         uint256 allowance = token.allowance(user1, address(fayhr));
-        assertEq(allowance, 100e6);
+        assertEq(allowance, 100e18);
     }
 
     function testDeapproveToken() public {
         vm.prank(user1);
-        token.approve(address(fayhr), 100e6);
+        token.approve(address(fayhr), 100e18);
         uint256 gasBefore = gasleft();
         vm.prank(user1);
         token.approve(address(fayhr), 0);
@@ -115,12 +114,12 @@ contract FahyrTest is Test {
         vm.prank(user1);
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 10e6, 0, 10, 100e6, 1000e6);
+        fayhr.startCrowdfund(1, 10e18, 0, 10, 100e18, 1000e18);
 
         vm.warp(block.timestamp + 2);
 
         vm.prank(user1);
-        token.approve(address(fayhr), 100e6);
+        token.approve(address(fayhr), 100e18);
         uint256 gasBefore = gasleft();
         // Logging the initial state of totalContributed before delegation
         (,,,,,,,,, uint256 initialTotalContributed,,,) = fayhr.crowdfundTypes(1);
@@ -134,7 +133,7 @@ contract FahyrTest is Test {
         (,,,,,,,,, uint256 finalTotalContributed,,,) = fayhr.crowdfundTypes(1);
         console.log("Final Total Contributed: ", finalTotalContributed);
 
-        assertEq(finalTotalContributed, 10e6);
+        assertEq(finalTotalContributed, 10e18);
         uint256 gasUsed = gasBefore - gasAfter;
         emit log_named_uint("Gas Used By DelegateToken Function:", gasUsed);
     }
@@ -145,12 +144,12 @@ contract FahyrTest is Test {
         vm.prank(user1);
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 10e6, 0, 10, 100e6, 1000e6);
+        fayhr.startCrowdfund(1, 10e18, 0, 10, 100e18, 1000e18);
 
         vm.warp(block.timestamp + 2);
 
         vm.prank(user1);
-        token.approve(address(fayhr), 100e6);
+        token.approve(address(fayhr), 100e18);
         vm.prank(user1);
         fayhr.delegateToken(1, 1);
         uint256 gasBefore = gasleft();
@@ -162,9 +161,9 @@ contract FahyrTest is Test {
         uint256 gasAfter = gasleft();
 
         uint256 user1Balance = token.balanceOf(user1);
-        assertEq(user1Balance, 100000e6);
+        assertEq(user1Balance, 100000e18);
         (,,,,,,,,, uint256 totalContributed,,,) = fayhr.crowdfundTypes(1);
-        assertEq(totalContributed, 10e6);
+        assertEq(totalContributed, 10e18);
         uint256 gasUsed = gasBefore - gasAfter;
         emit log_named_uint("Gas Used By ClaimToken Function:", gasUsed);
     }
@@ -175,12 +174,12 @@ contract FahyrTest is Test {
         vm.prank(user1);
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 10e6, 0, 10, 100e6, 1000e6);
+        fayhr.startCrowdfund(1, 10e18, 0, 10, 100e18, 1000e18);
 
         vm.warp(block.timestamp + 2);
 
         vm.prank(user1);
-        token.approve(address(fayhr), 100e6);
+        token.approve(address(fayhr), 100e18);
         vm.prank(user1);
         fayhr.delegateToken(1, 1);
         vm.warp(block.timestamp + 20);
@@ -191,12 +190,12 @@ contract FahyrTest is Test {
 
         vm.prank(user1);
         fayhr.claimToken(1);
-        uint256 gasAfter = gasleft(); 
+        uint256 gasAfter = gasleft();
 
         uint256 user1Balance = token.balanceOf(user1);
-        assertEq(user1Balance, 100000e6);
+        assertEq(user1Balance, 100000e18);
         (,,,,,,,,, uint256 totalContributed,,,) = fayhr.crowdfundTypes(1);
-        assertEq(totalContributed, 10e6);
+        assertEq(totalContributed, 10e18);
         uint256 gasUsed = gasBefore - gasAfter;
         emit log_named_uint("Gas Used By Claim Function after Cancelled:", gasUsed);
     }
@@ -207,7 +206,7 @@ contract FahyrTest is Test {
         vm.prank(user1);
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 1e6, 0, 10, 100e6, 1000e6);
+        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18);
         uint256 gasBefore = gasleft();
 
         vm.prank(seperateAdmin);
@@ -226,14 +225,14 @@ contract FahyrTest is Test {
         vm.prank(user1);
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 1e6, 0, 10, 10036, 1000e6);
+        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18);
 
         vm.prank(seperateAdmin);
         fayhr.cancelCrowdfund(1);
         uint256 gasBefore = gasleft();
 
         vm.prank(seperateAdmin);
-        fayhr.restartCanceledCrowdfund(1, 1e6, 0, 20, 200e6, 2000e6);
+        fayhr.restartCanceledCrowdfund(1, 1e18, 0, 20, 200e18, 2000e18);
         uint256 gasAfter = gasleft();
 
         (
@@ -250,11 +249,11 @@ contract FahyrTest is Test {
             Fayhr.Authorization authorization,
             bool closed,
         ) = fayhr.crowdfundTypes(1);
-        assertEq(slot, 1e6);
+        assertEq(slot, 1e18);
         assertTrue(startTime <= block.timestamp);
         assertTrue(endTime > block.timestamp);
-        assertEq(softCap, 200e6);
-        assertEq(hardCap, 2000e6);
+        assertEq(softCap, 200e18);
+        assertEq(hardCap, 2000e18);
         assertFalse(closed);
         assertEq(uint256(authorization), uint256(Fayhr.Authorization.active));
         uint256 gasUsed = gasBefore - gasAfter;
@@ -267,12 +266,12 @@ contract FahyrTest is Test {
         vm.prank(user1);
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 1e6, 0, 10, 100e6, 1000e6);
+        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18);
 
         vm.warp(block.timestamp + 2);
 
         vm.prank(user1);
-        token.approve(address(fayhr), 1000e6);
+        token.approve(address(fayhr), 1000e18);
         vm.prank(user1);
         fayhr.delegateToken(1, 1000);
         uint256 gasBefore = gasleft();
@@ -289,11 +288,11 @@ contract FahyrTest is Test {
         uint256 testContractBalance = token.balanceOf(address(this));
 
         // Ensure the tokens have been withdrawn correctly
-        assertEq(adminBalance, 1000e6); // separateAdmin gets 1000 tokens
-        assertEq(user1Balance, 99000e6); // user1 balance after delegation
+        assertEq(adminBalance, 1000e18); // separateAdmin gets 1000 tokens
+        assertEq(user1Balance, 99000e18); // user1 balance after delegation
 
         // Ensure the test contract balance is correctly updated
-        assertEq(testContractBalance, 999999800000000000); // initial 1 million minus tokens sent to user1 and user2
+        assertEq(testContractBalance, 999999800000000000000000000000); // initial 1 million minus tokens sent to user1 and user2
         uint256 gasUsed = gasBefore - gasAfter;
         emit log_named_uint("Gas Used By WithdrawCrowdfund Function:", gasUsed);
     }
@@ -320,12 +319,12 @@ contract FahyrTest is Test {
         vm.prank(user1);
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 1e6, 0, 10, 100e6, 1000e6);
+        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18);
 
         vm.warp(block.timestamp + 2);
 
         vm.prank(user1);
-        token.approve(address(fayhr), 100e6);
+        token.approve(address(fayhr), 100e18);
         vm.prank(user1);
         fayhr.delegateToken(1, 1);
         uint256 gasBefore = gasleft();
