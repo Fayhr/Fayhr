@@ -226,6 +226,153 @@
     },
     {
       "type": "function",
+      "name": "getAdmin",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getContribution",
+      "inputs": [
+        {
+          "name": "crowdfundId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "contributor",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getCrowdfund",
+      "inputs": [
+        {
+          "name": "crowdfundId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct Fayhr.CrowdfundType",
+          "components": [
+            {
+              "name": "id",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "internalType": "string"
+            },
+            {
+              "name": "requiredYesVotes",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "availableYesVotes",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "slot",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "startTime",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "endTime",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "softCap",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "hardCap",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "totalContributed",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "authorization",
+              "type": "uint8",
+              "internalType": "enum Fayhr.Authorization"
+            },
+            {
+              "name": "closed",
+              "type": "bool",
+              "internalType": "bool"
+            },
+            {
+              "name": "pollClosed",
+              "type": "bool",
+              "internalType": "bool"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "hasUserVoted",
+      "inputs": [
+        {
+          "name": "crowdfundId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "user",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
       "name": "hasVoted",
       "inputs": [
         {
