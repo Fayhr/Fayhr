@@ -265,4 +265,21 @@ contract Fayhr is ReentrancyGuard {
         admin.transfer(address(this).balance);
         emit ContractDeactivatedBy(msg.sender);
     }
+    
+    // Getter functions
+    function getCrowdfund(uint256 crowdfundId) public view returns (CrowdfundType memory) {
+        return crowdfundTypes[crowdfundId];
+    }
+
+    function getContribution(uint256 crowdfundId, address contributor) public view returns (uint256) {
+        return contributions[crowdfundId][contributor];
+    }
+
+    function hasUserVoted(uint256 crowdfundId, address user) public view returns (bool) {
+        return hasVoted[crowdfundId][user];
+    }
+
+    function getAdmin() public view returns (address) {
+        return admin;
+    }
 }

@@ -349,4 +349,46 @@ contract FahyrTest is Test {
         uint256 gasUsed = gasBefore - gasAfter;
         emit log_named_uint("Gas Used By Delete Function:", gasUsed);
     }
+    function testGetAdmin() public {
+        vm.prank(user1);
+        address returnedAdmin = fayhr.getAdmin();
+        assertEq(returnedAdmin, seperateAdmin, "Admin address should match");
+    }
+
+    function testGetCrowdfund() public {
+        vm.prank(seperateAdmin);
+        fayhr.createPoll(1, "Poll1", 1);
+        vm.prank(user2);
+        Fayhr.CrowdfundType memory crowdfund = fayhr.getCrowdfund(1);
+        assertEq(crowdfund.id, 1, "Initial crowdfund ID should be 1");
+    }
+
+    function testGetContribution() public {
+        vm.prank(seperateAdmin);
+        fayhr.createPoll(1, "Poll1", 1);
+        vm.prank(user1);
+        fayhr.vote(1, true);
+        vm.prank(seperateAdmin);
+        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18);
+
+        vm.warp(block.timestamp + 2);
+
+        vm.prank(user1);
+        token.approve(address(fayhr), 1000e18);
+        vm.prank(user1);
+        fayhr.delegateToken(1, 1000);
+        vm.prank(user1);
+        uint256 contribution = fayhr.getContribution(1, user1);
+        assertEq(contribution, 1000e18, "Initial contribution should be 1000e18");
+    }
+
+    function testHasUserVoted() public {
+         vm.prank(seperateAdmin);
+        fayhr.createPoll(1, "Poll1", 1);
+        vm.prank(user2);
+        fayhr.vote(1, true);
+        vm.prank(user2);
+        bool voted = fayhr.hasUserVoted(1, user2);
+        assertTrue(voted, "User should not have voted initially");
+    }
 }
