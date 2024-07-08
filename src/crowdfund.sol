@@ -36,8 +36,8 @@ contract Fayhr is ReentrancyGuard {
         Authorization authorization;
         bool closed;
         bool pollClosed;
-        // mapping(address => uint256) contributions;
     }
+    // mapping(address => uint256) contributions;
 
     event PollCreated(uint256 id, string name);
     event CrowdfundAndPollDeleted(uint256 id);
@@ -75,13 +75,14 @@ contract Fayhr is ReentrancyGuard {
         onlyAdmin
         onlyWhenActive
     {
+        require(crowdfundId > 0, "Invalid Crowdfund ID!");
         require(crowdfundTypes[crowdfundId].id == 0, "Crowdfund ID already exists!");
         uint256 newCrowdfundId = 0;
         if (crowdfundId == 1) {
             nextCrowdfundId = 1;
             newCrowdfundId = nextCrowdfundId;
             nextCrowdfundId++;
-        } else if (crowdfundId > 1) {
+        } else if (crowdfundId > 0) {
             newCrowdfundId = nextCrowdfundId;
             nextCrowdfundId++;
         }
@@ -265,7 +266,7 @@ contract Fayhr is ReentrancyGuard {
         admin.transfer(address(this).balance);
         emit ContractDeactivatedBy(msg.sender);
     }
-    
+
     // Getter functions
     function getCrowdfund(uint256 crowdfundId) public view returns (CrowdfundType memory) {
         return crowdfundTypes[crowdfundId];

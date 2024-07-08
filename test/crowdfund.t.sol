@@ -349,6 +349,7 @@ contract FahyrTest is Test {
         uint256 gasUsed = gasBefore - gasAfter;
         emit log_named_uint("Gas Used By Delete Function:", gasUsed);
     }
+
     function testGetAdmin() public {
         vm.prank(user1);
         address returnedAdmin = fayhr.getAdmin();
@@ -383,7 +384,7 @@ contract FahyrTest is Test {
     }
 
     function testHasUserVoted() public {
-         vm.prank(seperateAdmin);
+        vm.prank(seperateAdmin);
         fayhr.createPoll(1, "Poll1", 1);
         vm.prank(user2);
         fayhr.vote(1, true);

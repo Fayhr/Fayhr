@@ -71,7 +71,7 @@ contract DeployFayhr is Script {
         vm.stopBroadcast();
 
         vm.startBroadcast(user1);
-        fayhr.vote(1, true);
+        fayhr.vote(2, true);
         console.log("vote casted by:", user1);
         vm.stopBroadcast();
 
@@ -83,8 +83,8 @@ contract DeployFayhr is Script {
         vm.startBroadcast(user1);
         fayhr.approveToken();
         console.log("Token approved by:", user1);
-        fayhr.delegateToken(1, 10);
-        console.log("100 Tokens Delegated by:", user1);
+        fayhr.delegateToken(2, 10);
+        console.log("10 Tokens Delegated by:", user1);
         vm.stopBroadcast();
 
         vm.warp(block.timestamp + 2);
