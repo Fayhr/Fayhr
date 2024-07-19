@@ -30,7 +30,7 @@ contract FahyrTest is Test {
 
     function testCreatePoll() public {
         vm.prank(seperateAdmin);
-        fayhr.createPoll(1, "Poll1", 10);
+        fayhr.createPoll(1, "Poll1", 10, false);
         (uint256 id, string memory name,, uint256 availableYesVotes,,,,,,,,,) = fayhr.crowdfundTypes(1);
         assertEq(id, 1);
         assertEq(name, "Poll1");
@@ -39,22 +39,26 @@ contract FahyrTest is Test {
 
     function testVote() public {
         vm.prank(seperateAdmin);
-        fayhr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1, false);
+        (,,,,,,,,,,,, bool initialpollClosed) = fayhr.crowdfundTypes(1);
         uint256 gasBefore = gasleft();
 
         vm.prank(user1);
         fayhr.vote(1, true);
         uint256 gasAfter = gasleft();
 
-        (,,, uint256 availableYesVotes,,,,,,,,,) = fayhr.crowdfundTypes(1);
+        (,,, uint256 availableYesVotes,,,,,,,, bool closed, bool pollClosed) = fayhr.crowdfundTypes(1);
         assertEq(availableYesVotes, 1);
+        assertFalse(initialpollClosed);
+        assertTrue(pollClosed);
+        assertTrue(closed);
         uint256 gasUsed = gasBefore - gasAfter;
         emit log_named_uint("Gas Used By Vote Function:", gasUsed);
     }
 
     function testDeleteCrowdfundAndPoll() public {
         vm.prank(seperateAdmin);
-        fayhr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1, false);
         uint256 gasBefore = gasleft();
 
         vm.prank(seperateAdmin);
@@ -68,22 +72,36 @@ contract FahyrTest is Test {
 
     function testStartCrowdfund() public {
         vm.prank(seperateAdmin);
-        fayhr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1, false);
         vm.prank(user1);
         fayhr.vote(1, true);
         uint256 gasBefore = gasleft();
 
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18);
+        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18, false);
         uint256 gasAfter = gasleft();
-        (,,,, uint256 slot, uint256 startTime, uint256 endTime, uint256 softCap, uint256 hardCap,,, bool closed,) =
-            fayhr.crowdfundTypes(1);
+        (
+            ,
+            ,
+            ,
+            ,
+            uint256 slot,
+            uint256 startTime,
+            uint256 endTime,
+            uint256 softCap,
+            uint256 hardCap,
+            ,
+            ,
+            bool closed,
+            bool pollClosed
+        ) = fayhr.crowdfundTypes(1);
         assertEq(slot, 1e18);
         assertTrue(startTime <= block.timestamp);
         assertTrue(endTime > block.timestamp);
         assertEq(softCap, 100e18);
         assertEq(hardCap, 1000e18);
         assertFalse(closed);
+        assertTrue(pollClosed);
         uint256 gasUsed = gasBefore - gasAfter;
         emit log_named_uint("Gas Used By StartCrowdfund Function:", gasUsed);
     }
@@ -91,6 +109,8 @@ contract FahyrTest is Test {
     function testApproveToken() public {
         vm.prank(user1);
         token.approve(address(fayhr), 100e18);
+        // token.approve(address(fayhr), 100e18);
+        // uint256 allowance = token.allowance(address(fayhr), address(fayhr));
         uint256 allowance = token.allowance(user1, address(fayhr));
         assertEq(allowance, 100e18);
     }
@@ -110,41 +130,44 @@ contract FahyrTest is Test {
 
     function testDelegateToken() public {
         vm.prank(seperateAdmin);
-        fayhr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1, false);
         vm.prank(user1);
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 10e18, 0, 10, 100e18, 1000e18);
+        fayhr.startCrowdfund(1, 10e18, 0, 10, 100e18, 1000e18, false);
 
         vm.warp(block.timestamp + 2);
 
         vm.prank(user1);
+        // token.approve(address(fayhr), 100e18);
         token.approve(address(fayhr), 100e18);
         uint256 gasBefore = gasleft();
         // Logging the initial state of totalContributed before delegation
-        (,,,,,,,,, uint256 initialTotalContributed,,,) = fayhr.crowdfundTypes(1);
-        console.log("Initial Total Contributed: ", initialTotalContributed);
+        // (,,,,,,,,, uint256 initialTotalContributed,,,) = fayhr.crowdfundTypes(1);
+        // console.log("Initial Total Contributed: ", initialTotalContributed);
 
         vm.prank(user1);
         fayhr.delegateToken(1, 1);
         uint256 gasAfter = gasleft();
+        uint256 contractBalance = token.balanceOf(address(fayhr));
 
         // Logging the final state of totalContributed after delegation
         (,,,,,,,,, uint256 finalTotalContributed,,,) = fayhr.crowdfundTypes(1);
         console.log("Final Total Contributed: ", finalTotalContributed);
 
         assertEq(finalTotalContributed, 10e18);
+        assertEq(contractBalance, 10e18);
         uint256 gasUsed = gasBefore - gasAfter;
         emit log_named_uint("Gas Used By DelegateToken Function:", gasUsed);
     }
 
     function testClaimToken() public {
         vm.prank(seperateAdmin);
-        fayhr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1, false);
         vm.prank(user1);
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 10e18, 0, 10, 100e18, 1000e18);
+        fayhr.startCrowdfund(1, 10e18, 0, 10, 100e18, 1000e18, false);
 
         vm.warp(block.timestamp + 2);
 
@@ -170,11 +193,11 @@ contract FahyrTest is Test {
 
     function testClaimTokenWhenCancelCalled() public {
         vm.prank(seperateAdmin);
-        fayhr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1, false);
         vm.prank(user1);
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 10e18, 0, 10, 100e18, 1000e18);
+        fayhr.startCrowdfund(1, 10e18, 0, 10, 100e18, 1000e18, false);
 
         vm.warp(block.timestamp + 2);
 
@@ -202,11 +225,11 @@ contract FahyrTest is Test {
 
     function testCancelCrowdfund() public {
         vm.prank(seperateAdmin);
-        fayhr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1, false);
         vm.prank(user1);
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18);
+        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18, false);
         uint256 gasBefore = gasleft();
 
         vm.prank(seperateAdmin);
@@ -221,18 +244,18 @@ contract FahyrTest is Test {
 
     function testRestartCanceledCrowdfund() public {
         vm.prank(seperateAdmin);
-        fayhr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1, false);
         vm.prank(user1);
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18);
+        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18, false);
 
         vm.prank(seperateAdmin);
         fayhr.cancelCrowdfund(1);
         uint256 gasBefore = gasleft();
 
         vm.prank(seperateAdmin);
-        fayhr.restartCanceledCrowdfund(1, 1e18, 0, 20, 200e18, 2000e18);
+        fayhr.restartCanceledCrowdfund(1, 1e18, 0, 20, 200e18, 2000e18, false);
         uint256 gasAfter = gasleft();
 
         (
@@ -262,11 +285,11 @@ contract FahyrTest is Test {
 
     function testWithdrawCrowdfund() public {
         vm.prank(seperateAdmin);
-        fayhr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1, false);
         vm.prank(user1);
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18);
+        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18, false);
 
         vm.warp(block.timestamp + 2);
 
@@ -315,11 +338,11 @@ contract FahyrTest is Test {
 
     function testDeleteContract() public {
         vm.prank(seperateAdmin);
-        fayhr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1, false);
         vm.prank(user1);
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18);
+        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18, false);
 
         vm.warp(block.timestamp + 2);
 
@@ -358,7 +381,7 @@ contract FahyrTest is Test {
 
     function testGetCrowdfund() public {
         vm.prank(seperateAdmin);
-        fayhr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1, false);
         vm.prank(user2);
         Fayhr.CrowdfundType memory crowdfund = fayhr.getCrowdfund(1);
         assertEq(crowdfund.id, 1, "Initial crowdfund ID should be 1");
@@ -366,11 +389,11 @@ contract FahyrTest is Test {
 
     function testGetContribution() public {
         vm.prank(seperateAdmin);
-        fayhr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1, false);
         vm.prank(user1);
         fayhr.vote(1, true);
         vm.prank(seperateAdmin);
-        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18);
+        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18, false);
 
         vm.warp(block.timestamp + 2);
 
@@ -385,11 +408,42 @@ contract FahyrTest is Test {
 
     function testHasUserVoted() public {
         vm.prank(seperateAdmin);
-        fayhr.createPoll(1, "Poll1", 1);
+        fayhr.createPoll(1, "Poll1", 1, false);
         vm.prank(user2);
         fayhr.vote(1, true);
         vm.prank(user2);
         bool voted = fayhr.hasUserVoted(1, user2);
         assertTrue(voted, "User should not have voted initially");
+    }
+
+    function testReceiveToken() public {
+        vm.prank(user1);
+        token.approve(address(fayhr), 1000e18);
+
+        vm.prank(user1);
+        fayhr.receiveToken(1000e18);
+        // uint256 tokenAllowance = token.allowance(user1, address(fayhr));
+        uint256 contractBalance = token.balanceOf(address(fayhr));
+        // assertEq(tokenAllowance, 10000000e18);
+        assertEq(contractBalance, 1000e18);
+    }
+
+    function testTokenFaucet() public {
+        vm.prank(user1);
+        token.approve(address(fayhr), 10000e18);
+
+        vm.prank(user1);
+        fayhr.receiveToken(10000e18);
+        uint256 initailBalance = token.balanceOf(address(fayhr));
+        // uint256 initialAllowance = token.allowance(user1, address(fayhr));
+
+        vm.prank(user1);
+        fayhr.tokenFaucet(100e18);
+        // uint256 tokenAllowance = token.allowance(user1, address(fayhr));
+        uint256 contractBalance = token.balanceOf(address(fayhr));
+        assertEq(initailBalance, 10000e18);
+        // assertEq(initialAllowance, 10000000e18);
+        // assertEq(tokenAllowance, 9000000e18);
+        assertEq(contractBalance, 9900e18);
     }
 }

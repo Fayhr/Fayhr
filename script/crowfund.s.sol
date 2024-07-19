@@ -27,7 +27,7 @@ contract DeployFayhr is Script {
         // Optional: Initialize your contract with some data
         vm.startBroadcast(admin);
 
-        fayhr.createPoll(1, "Initial Poll", 1);
+        fayhr.createPoll(1, "Initial Poll", 1, false);
         console.log("poll created by owner:", admin);
         vm.stopBroadcast();
 
@@ -37,7 +37,7 @@ contract DeployFayhr is Script {
         vm.stopBroadcast();
 
         vm.startBroadcast(admin);
-        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18);
+        fayhr.startCrowdfund(1, 1e18, 0, 10, 100e18, 1000e18, false);
         console.log("crowdfund started by:", admin);
         vm.stopBroadcast();
 
@@ -66,7 +66,7 @@ contract DeployFayhr is Script {
 
         vm.startBroadcast(admin);
 
-        fayhr.createPoll(2, "Initial Poll", 1);
+        fayhr.createPoll(2, "Initial Poll", 1, false);
         console.log("poll created by owner:", admin);
         vm.stopBroadcast();
 
@@ -76,7 +76,7 @@ contract DeployFayhr is Script {
         vm.stopBroadcast();
 
         vm.startBroadcast(admin);
-        fayhr.startCrowdfund(2, 1e18, 0, 10, 100e18, 1000e18);
+        fayhr.startCrowdfund(2, 1e18, 0, 10, 100e18, 1000e18, false);
         console.log("crowdfund started by:", admin);
         vm.stopBroadcast();
 
@@ -100,7 +100,7 @@ contract DeployFayhr is Script {
         vm.startBroadcast();
 
         vm.startBroadcast(admin);
-        fayhr.restartCanceledCrowdfund(2, 1e18, 0, 10, 100e18, 1000e18);
+        fayhr.restartCanceledCrowdfund(2, 1e18, 0, 10, 100e18, 1000e18, false);
         console.log("Crowdfund Restarted By:", admin);
         vm.stopBroadcast();
 

@@ -14,7 +14,8 @@ contract DeployFayhr is Script {
 
         // Replace these with your admin and token addresses
         address admin = 0x617eca02EE345f7dB08A941f22cef7b284484e2e;
-        address tokenAddress = 0x5E6132634dfA87D5D8968F0F7F2F4027ef60c4eF;
+        // address tokenAddress = 0x5E6132634dfA87D5D8968F0F7F2F4027ef60c4eF;
+        address tokenAddress = 0xFA1372203590a0B80D04D5f12Cae15BFD7a144B8;
 
         // Deploy the contract
         Fayhr fayhr = new Fayhr(admin, tokenAddress);
