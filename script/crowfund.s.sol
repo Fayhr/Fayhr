@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/Test.sol";
-import {TestToken} from "../src/TestToken.sol";
 import {Fayhr} from "../src/crowdfund.sol";
 
 contract DeployFayhr is Script {
@@ -15,12 +14,9 @@ contract DeployFayhr is Script {
 
         vm.startBroadcast(tokenDeployer);
 
-        // Deploy the TestToken contract
-        TestToken testToken = new TestToken();
-        console.log("TestToken contract deployed at:", address(testToken));
 
         // Deploy the Fayhr contract with the TestToken address
-        Fayhr fayhr = new Fayhr(admin, address(testToken));
+        Fayhr fayhr = new Fayhr(admin);
         console.log("Fayhr contract deployed at:", address(fayhr));
         vm.stopBroadcast();
 
@@ -41,14 +37,12 @@ contract DeployFayhr is Script {
         console.log("crowdfund started by:", admin);
         vm.stopBroadcast();
 
-        testToken.transfer(user1, 100000e18);
-        testToken.transfer(user2, 100000e18);
-
-        vm.deal(user1, 100 ether);
+        vm.deal(user1, 1000 ether);
+        vm.deal(user2, 1000 ether);
 
         vm.startBroadcast(user2);
-        fayhr.approveToken();
-        fayhr.delegateToken(1, 100);
+        
+        fayhr.delegateEth(1, 100);
         console.log("100 Tokens Delegated by:", user2);
         vm.startBroadcast();
 
@@ -59,10 +53,6 @@ contract DeployFayhr is Script {
         console.log("funds withdrawn by:", admin);
         vm.stopBroadcast();
 
-        vm.startBroadcast(user2);
-        fayhr.deapproveToken();
-        console.log("Token Deapproved By:", user2);
-        vm.stopBroadcast();
 
         vm.startBroadcast(admin);
 
@@ -81,9 +71,7 @@ contract DeployFayhr is Script {
         vm.stopBroadcast();
 
         vm.startBroadcast(user1);
-        fayhr.approveToken();
-        console.log("Token approved by:", user1);
-        fayhr.delegateToken(2, 10);
+        fayhr.delegateEth(2, 10);
         console.log("10 Tokens Delegated by:", user1);
         vm.stopBroadcast();
 
@@ -95,7 +83,7 @@ contract DeployFayhr is Script {
         vm.stopBroadcast();
 
         vm.startBroadcast(user1);
-        fayhr.claimToken(2);
+        fayhr.claimEth(2);
         console.log("Funds refunded to:", user1);
         vm.startBroadcast();
 

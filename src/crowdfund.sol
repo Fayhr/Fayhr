@@ -1,15 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-// import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/IERC20.sol";
 // import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/ReentrancyGuard.sol";
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract Fayhr is ReentrancyGuard {
-    // IERC20 public token;
-    address public tokenAddress;
     address payable private admin;
     uint256 public nextCrowdfundId;
     bool public isActive;
@@ -38,7 +34,6 @@ contract Fayhr is ReentrancyGuard {
         bool closed;
         bool pollClosed;
     }
-    // mapping(address => uint256) contributions;
 
     event PollCreated(uint256 id, string name);
     event CrowdfundAndPollDeleted(uint256 id);
@@ -48,17 +43,14 @@ contract Fayhr is ReentrancyGuard {
     event CrowdfundCreated(
         uint256 id, uint256 slot, uint256 startTime, uint256 endTime, uint256 softCap, uint256 hardCap
     );
-    event TokenDelegated(uint256 id, uint256 amount, uint256 slotUnit);
-    event TokenClaimed(uint256 id, uint256 amount);
+    event EthDelegated(uint256 id, uint256 amount, uint256 slotUnit);
+    event EthClaimed(uint256 id, uint256 amount);
     event CrowdfundCanceled(uint256 id);
     event CrowdfundWithdrawn(uint256 id, uint256 amount);
-    event nonFunctionDeposit(address sender, uint256 amount);
+    event NonFunctionDeposit(address sender, uint256 amount);
     event ContractDeactivatedBy(address deactivator);
     event VotePlaced(address voter, bool vote);
-    event TokensReceived(address from, uint256 amount);
-    event TokenFaucetSent(address to, uint256 amount);
-    event TokenApproval(address by, uint256 amount);
-    event TokenDeapproval(address by, uint256 amount);
+    event DebugLog(string message, uint256 value);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Only Admin can use this function");
@@ -70,10 +62,8 @@ contract Fayhr is ReentrancyGuard {
         _;
     }
 
-    constructor(address _admin, address _tokenAddress) {
+    constructor(address _admin) {
         admin = payable(_admin);
-        tokenAddress = _tokenAddress;
-        // token = IERC20(tokenAddress);
         isActive = true;
     }
 
@@ -137,23 +127,6 @@ contract Fayhr is ReentrancyGuard {
         }
     }
 
-    /**
-     * function createCrowdfund(uint256 crowdfundId) internal {
-     *     if (crowdfundTypes[crowdfundId].availableYesVotes == crowdfundTypes[crowdfundId].requiredYesVotes) {
-     *         crowdfundTypes[crowdfundId].authorization = Authorization.active;
-     *         crowdfundTypes[crowdfundId].closed = true;
-     *         crowdfundTypes[crowdfundId].pollClosed = true;
-     *         emit CrowdfundCreated(
-     *             crowdfundId,
-     *             crowdfundTypes[crowdfundId].slot,
-     *             crowdfundTypes[crowdfundId].startTime,
-     *             crowdfundTypes[crowdfundId].endTime,
-     *             crowdfundTypes[crowdfundId].softCap,
-     *             crowdfundTypes[crowdfundId].hardCap
-     *         );
-     *     }
-     * }
-     */
     function deleteCrowdfundAndPoll(uint256 crowdfundId) external onlyAdmin onlyWhenActive {
         require(crowdfundTypes[crowdfundId].id != 0, "Poll/Crowdfund Doesn't Exist");
         delete crowdfundTypes[crowdfundId];
@@ -182,22 +155,7 @@ contract Fayhr is ReentrancyGuard {
         emit CrowdfundStarted(crowdfundId, _slot, _startTime, _endTime, _softCap, _hardCap);
     }
 
-    function approveToken() external onlyWhenActive {
-        IERC20 token = IERC20(tokenAddress);
-        uint256 amount = 1000000e18;
-        require(token.approve(address(this), amount), "Token Approval Unsuccessful");
-        emit TokenApproval(msg.sender, amount);
-    }
-
-    function deapproveToken() external onlyWhenActive {
-        IERC20 token = IERC20(tokenAddress);
-        uint256 amount = 0;
-        require(token.approve(address(this), amount), "Token Deapproval Unsuccessful");
-        emit TokenDeapproval(msg.sender, amount);
-    }
-
-    function delegateToken(uint256 crowdfundId, uint256 _slotUnit) external onlyWhenActive {
-        IERC20 token = IERC20(tokenAddress);
+    function delegateEth(uint256 crowdfundId, uint256 _slotUnit) external payable onlyWhenActive {
         require(
             crowdfundTypes[crowdfundId].authorization == Authorization.active && !crowdfundTypes[crowdfundId].closed,
             "Crowdfund not Active / Closed"
@@ -209,9 +167,7 @@ contract Fayhr is ReentrancyGuard {
         );
         uint256 delegateAmount = crowdfundTypes[crowdfundId].slot * _slotUnit;
         require(delegateAmount % crowdfundTypes[crowdfundId].slot == 0, "Inappropriate Slot Unit");
-        require(token.allowance(msg.sender, address(this)) >= delegateAmount, "Insufficient Allowance");
-        require(token.balanceOf(msg.sender) >= delegateAmount, "Insufficient Token Balance");
-        require(token.transferFrom(address(msg.sender), address(this), delegateAmount), "Contribution Failed");
+        require(msg.value >= delegateAmount, "Incorrect ETH amount sent");
         crowdfundTypes[crowdfundId].totalContributed += delegateAmount;
         contributions[crowdfundId][msg.sender] += delegateAmount;
         if (crowdfundTypes[crowdfundId].totalContributed == crowdfundTypes[crowdfundId].hardCap) {
@@ -224,17 +180,15 @@ contract Fayhr is ReentrancyGuard {
             bool verdict = true;
             crowdfundTypes[crowdfundId].closed = verdict;
         }
-        emit TokenDelegated(crowdfundId, delegateAmount, _slotUnit);
+        emit EthDelegated(crowdfundId, delegateAmount, _slotUnit);
     }
 
-    function claimToken(uint256 crowdfundId) external onlyWhenActive nonReentrant {
-        IERC20 token = IERC20(tokenAddress);
+    function claimEth(uint256 crowdfundId) external onlyWhenActive nonReentrant {
         if (
             crowdfundTypes[crowdfundId].totalContributed <= crowdfundTypes[crowdfundId].softCap
                 && block.timestamp > crowdfundTypes[crowdfundId].endTime
         ) {
-            bool verdict = true;
-            crowdfundTypes[crowdfundId].closed = verdict;
+            crowdfundTypes[crowdfundId].closed = true;
         }
         require(crowdfundTypes[crowdfundId].closed, "Crowdfund Is Not Closed");
         require(
@@ -243,10 +197,18 @@ contract Fayhr is ReentrancyGuard {
             "Softcap Reached / Crowdfund Not Canceled"
         );
         uint256 claimAmount = contributions[crowdfundId][msg.sender];
-        require(claimAmount != 0, "No Funds Available");
+        require(claimAmount != 0, "No Funds To Claim");
         contributions[crowdfundId][msg.sender] = 0;
-        require(token.transfer(address(msg.sender), claimAmount), "Claim Failed");
-        emit TokenClaimed(crowdfundId, claimAmount);
+        require(address(this).balance >= claimAmount, "No Funds Available");
+
+        emit DebugLog("Claim Amount", claimAmount);
+        emit DebugLog("Contract Balance", address(this).balance);
+
+        address payable collector = payable(msg.sender);
+        (bool success,) = collector.call{value: claimAmount}("");
+        require(success, "Transfer Failed");
+
+        emit EthClaimed(crowdfundId, claimAmount);
     }
 
     function cancelCrowdfund(uint256 crowdfundId) external onlyAdmin onlyWhenActive {
@@ -254,6 +216,27 @@ contract Fayhr is ReentrancyGuard {
         crowdfundTypes[crowdfundId].closed = verdict;
         crowdfundTypes[crowdfundId].authorization = Authorization.cancel;
         emit CrowdfundCanceled(crowdfundId);
+    }
+
+    function restartCrowdfund(
+        uint256 crowdfundId,
+        uint256 _slot,
+        uint256 _startTime,
+        uint256 _endTime,
+        uint256 _softCap,
+        uint256 _hardCap,
+        bool verdict
+    ) external onlyAdmin onlyWhenActive {
+        require(crowdfundTypes[crowdfundId].id != 0, "Crowdfund Doesn't Exist");
+        require(crowdfundTypes[crowdfundId].totalContributed == 0, "Funds Not Claimed, Wait or Create New Entry");
+        require(_endTime > _startTime, "Endtime not > Starttime");
+        crowdfundTypes[crowdfundId].slot = _slot;
+        crowdfundTypes[crowdfundId].startTime = block.timestamp + _startTime;
+        crowdfundTypes[crowdfundId].endTime = block.timestamp + _endTime;
+        crowdfundTypes[crowdfundId].softCap = _softCap;
+        crowdfundTypes[crowdfundId].hardCap = _hardCap;
+        crowdfundTypes[crowdfundId].closed = verdict; // verdict should be false
+        emit CrowdfundStarted(crowdfundId, _slot, _startTime, _endTime, _softCap, _hardCap);
     }
 
     function restartCanceledCrowdfund(
@@ -279,7 +262,6 @@ contract Fayhr is ReentrancyGuard {
     }
 
     function withdrawCrowdfund(uint256 crowdfundId) external onlyAdmin onlyWhenActive {
-        IERC20 token = IERC20(tokenAddress);
         require(crowdfundTypes[crowdfundId].closed, "Crowdfund Not Closed");
         require(crowdfundTypes[crowdfundId].authorization == Authorization.active, "Crowdfund Already Canceled");
         require(
@@ -289,19 +271,13 @@ contract Fayhr is ReentrancyGuard {
         );
         uint256 withdrawalAmount = crowdfundTypes[crowdfundId].totalContributed;
         crowdfundTypes[crowdfundId].totalContributed = 0;
-        require(token.transfer(address(msg.sender), withdrawalAmount), "Withdrawal Failed");
+        payable(msg.sender).transfer(withdrawalAmount);
         emit CrowdfundWithdrawn(crowdfundId, withdrawalAmount);
     }
 
-    receive() external payable {
-        emit nonFunctionDeposit(msg.sender, msg.value);
-    }
-
     function deleteContract() external onlyAdmin onlyWhenActive {
-        IERC20 token = IERC20(tokenAddress);
         isActive = false;
-        require(token.transfer(address(msg.sender), token.balanceOf(address(this))), "Delete Withdrawal Unsuccessful");
-        admin.transfer(address(this).balance);
+        payable(admin).transfer(address(this).balance);
         emit ContractDeactivatedBy(msg.sender);
     }
 
@@ -322,21 +298,7 @@ contract Fayhr is ReentrancyGuard {
         return admin;
     }
 
-    function receiveToken(uint256 amount) external onlyWhenActive {
-        IERC20 token = IERC20(tokenAddress);
-        require(amount > 0, "Amount must be greater than zero");
-        // require(token.approve(address(this), amount), "Couldn't Approve Spending");
-        bool success = token.transferFrom(msg.sender, address(this), amount);
-        require(success, "Token transfer failed");
-
-        emit TokensReceived(msg.sender, amount);
-    }
-
-    function tokenFaucet(uint256 amount) external onlyWhenActive nonReentrant {
-        IERC20 token = IERC20(tokenAddress);
-        require(token.balanceOf(address(this)) >= amount, "InSufficeint Funds in Faucet");
-        bool success = token.transfer(msg.sender, amount);
-        require(success, "Token Faucet Not Sent");
-        emit TokenFaucetSent(msg.sender, amount);
+    receive() external payable {
+        emit NonFunctionDeposit(msg.sender, msg.value);
     }
 }
