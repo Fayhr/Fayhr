@@ -28,9 +28,9 @@ contract InteractFayhr is Script {
         // fayhr.vote(1, true);
 
         // Delegate tokens
-        fayhr.delegateEth{value: 0.01 ether}(1, 1);
+        // fayhr.delegateEth{value: 0.01 ether}(1, 1);
         // fayhr.delegateToken(2, 1);
-        // fayhr.delegateToken(3, 1);
+        fayhr.delegateEth{value: 0.01 ether}(3, 1);
 
         vm.stopBroadcast();
     }

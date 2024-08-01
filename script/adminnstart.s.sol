@@ -24,9 +24,9 @@ contract InteractFayhr is Script {
         // fayhr.createPoll(1, "Example Poll", 100);
 
         // Start a crowdfund
-        fayhr.startCrowdfund(1, 1e16, 0, 259200, 5e17, 1e18, false);
+        // fayhr.startCrowdfund(1, 1e16, 0, 259200, 5e17, 1e18, false);
         // fayhr.startCrowdfund(2, 1000e18, 0, 259200, 50000e18, 100000e18, false);
-        // fayhr.startCrowdfund(3, 1000e18, 0, 259200, 50000e18, 100000e18, false);
+        fayhr.startCrowdfund(3, 1e16, 0, 2419200, 1e18, 2e18, false);
 
         // Vote on a poll
         // fayhr.vote(1, true);
